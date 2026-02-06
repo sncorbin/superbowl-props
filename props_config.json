@@ -142,9 +142,8 @@
   "freeform_fields": [
     {
       "id": "total_score",
-      "label": "Total Score (Tiebreaker)",
-      "type": "number",
-      "placeholder": "Enter your prediction"
+      "label": "Total Score",
+      "type": "number"
     }
   ]
 }
