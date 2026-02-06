@@ -29,10 +29,12 @@ def create_default_admin():
             access_token=secrets.token_urlsafe(16),
             is_admin=True
         )
-        admin.set_admin_password('superbowl2025')
+        # Use MASTER_KEY env var or default password
+        admin_password = os.environ.get('MASTER_KEY', 'superbowl2025')
+        admin.set_admin_password(admin_password)
         admin.save()
         print("✓ Created default admin user")
-        print("  Admin Password: superbowl2025")
+        print(f"  Admin Password: {'(from MASTER_KEY env var)' if os.environ.get('MASTER_KEY') else 'superbowl2025'}")
     else:
         print("• Admin user already exists")
 

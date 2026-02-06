@@ -32,6 +32,28 @@ login_manager.login_message_category = 'info'
 # Initialize database tables on startup
 init_db()
 
+# Create admin user if none exists
+def ensure_admin_exists():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE is_admin = 1 LIMIT 1')
+    admin_row = cursor.fetchone()
+    conn.close()
+    
+    if admin_row is None:
+        import os
+        admin = User(
+            display_name='Commissioner',
+            access_token=secrets.token_urlsafe(16),
+            is_admin=True
+        )
+        admin_password = os.environ.get('MASTER_KEY', 'superbowl2025')
+        admin.set_admin_password(admin_password)
+        admin.save()
+        print(f"✓ Created admin user (password from {'MASTER_KEY env' if os.environ.get('MASTER_KEY') else 'default'})")
+
+ensure_admin_exists()
+
 mail = Mail(app)
 
 
