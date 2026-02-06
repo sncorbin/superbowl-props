@@ -447,12 +447,12 @@ class GameConfig:
     KEYS = {
         'super_bowl_number': 'LX',
         'game_date': '2026-02-08',
-        'game_time': '18:30',
+        'game_time': '15:30',
         'venue_name': "Levi's Stadium",
         'venue_city': 'Santa Clara',
         'venue_state': 'CA',
-        'team_a_code': 'KC',
-        'team_b_code': 'PHI',
+        'team_a_code': 'SEA',
+        'team_b_code': 'NE',
         'pool_name': 'Pioneer Hill Super Bowl Pool',
         'pool_tagline': 'Pullman\'s Premier Prop Bet Experience'
     }
