@@ -32,7 +32,7 @@ login_manager.login_message_category = 'info'
 # Initialize database tables on startup
 init_db()
 
-# Create admin user if none exists
+# Create admin user if none exists, or fix if password is missing
 def ensure_admin_exists():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -40,17 +40,25 @@ def ensure_admin_exists():
     admin_row = cursor.fetchone()
     conn.close()
     
+    admin_password = os.environ.get('MASTER_KEY', 'superbowl2025')
+    
     if admin_row is None:
-        import os
+        # No admin exists - create one
         admin = User(
             display_name='Commissioner',
             access_token=secrets.token_urlsafe(16),
             is_admin=True
         )
-        admin_password = os.environ.get('MASTER_KEY', 'superbowl2025')
         admin.set_admin_password(admin_password)
         admin.save()
         print(f"✓ Created admin user (password from {'MASTER_KEY env' if os.environ.get('MASTER_KEY') else 'default'})")
+    else:
+        # Admin exists - check if password is set
+        admin = User.from_row(admin_row)
+        if not admin.admin_password:
+            admin.set_admin_password(admin_password)
+            admin.save()
+            print(f"✓ Fixed admin password (from {'MASTER_KEY env' if os.environ.get('MASTER_KEY') else 'default'})")
 
 ensure_admin_exists()
 
