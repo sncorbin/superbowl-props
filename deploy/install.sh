@@ -48,7 +48,7 @@ if [ ! -f ".env" ]; then
         SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
         sed -i "s/your-secret-key-change-this-in-production/$SECRET_KEY/" .env
         echo -e "${YELLOW}Created .env file with random secret key${NC}"
-        echo -e "${YELLOW}Edit .env to set MASTER_KEY and ACCESS_TOKEN${NC}"
+        echo -e "${YELLOW}Edit .env to set MASTER_KEY${NC}"
     else
         echo -e "${RED}Warning: No .env.example found${NC}"
     fi
@@ -104,7 +104,7 @@ echo -e "  ${GREEN}http://localhost:5000${NC} (direct)"
 echo -e "  ${GREEN}http://localhost${NC} (via nginx)"
 echo ""
 echo "Next steps:"
-echo "  1. Edit .env to set your MASTER_KEY and ACCESS_TOKEN"
+echo "  1. Edit .env to set your MASTER_KEY (admin password)"
 echo "  2. Restart the service: sudo systemctl restart superbowl-props"
 echo "  3. (Optional) Set up SSL with: sudo certbot --nginx"
 echo ""

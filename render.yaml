@@ -14,8 +14,6 @@ services:
         generateValue: true
       - key: MASTER_KEY
         sync: false  # Set manually in dashboard
-      - key: ACCESS_TOKEN
-        sync: false  # Set manually in dashboard
     disk:
       name: props-data
       mountPath: /opt/render/project/src/data

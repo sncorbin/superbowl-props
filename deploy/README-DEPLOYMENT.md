@@ -172,8 +172,7 @@ All deployment methods need these environment variables:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `SECRET_KEY` | Flask secret key | `your-random-secret-key-here` |
-| `MASTER_KEY` | Admin access key | `superbowl2026` |
-| `ACCESS_TOKEN` | Player access token | `letmein` |
+| `MASTER_KEY` | Admin login password | `superbowl2026` |
 | `MAIL_SERVER` | SMTP server (optional) | `smtp.gmail.com` |
 | `MAIL_PORT` | SMTP port | `587` |
 | `MAIL_USERNAME` | Email username | `your@email.com` |
