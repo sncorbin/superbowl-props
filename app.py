@@ -62,6 +62,82 @@ def ensure_admin_exists():
 
 ensure_admin_exists()
 
+# Load props from config file
+def load_props_from_config(force_reload=False):
+    """Load prop questions from props_config.json"""
+    import json
+    
+    config_path = os.path.join(os.path.dirname(__file__), 'props_config.json')
+    if not os.path.exists(config_path):
+        print("⚠ props_config.json not found")
+        return 0
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    if not force_reload:
+        cursor.execute('SELECT COUNT(*) as count FROM prop_questions')
+        if cursor.fetchone()['count'] > 0:
+            conn.close()
+            return 0  # Props already exist
+    
+    if force_reload:
+        cursor.execute('DELETE FROM prop_questions')
+        conn.commit()
+    
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
+    props = config.get('props', [])
+    
+    for i, prop in enumerate(props):
+        category = prop.get('category', 'Props')
+        label = prop.get('label', f"Question {i+1}")
+        options = prop.get('options', [])
+        
+        if len(options) >= 2:
+            if isinstance(options[0], dict):
+                opt = options[0]
+                if 'side' in opt and 'value' in opt:
+                    option_a = f"Over {opt['value']}"
+                    option_b = f"Under {options[1]['value']}"
+                else:
+                    option_a = opt.get('display', 'Option A')
+                    option_b = options[1].get('display', 'Option B')
+            else:
+                option_a = str(options[0])
+                option_b = str(options[1])
+        else:
+            option_a = "Yes"
+            option_b = "No"
+        
+        cursor.execute('''
+            INSERT INTO prop_questions (category, question, option_a, option_b, display_order, is_active)
+            VALUES (?, ?, ?, ?, ?, 1)
+        ''', (category, label, option_a, option_b, i))
+    
+    # Load freeform fields (tiebreakers) if present
+    freeform_fields = config.get('freeform_fields', [])
+    for i, field in enumerate(freeform_fields):
+        cursor.execute('''
+            INSERT OR REPLACE INTO freeform_fields (field_id, label, field_type, placeholder, display_order)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            field.get('id', f'field_{i}'),
+            field.get('label', f'Field {i+1}'),
+            field.get('type', 'number'),
+            field.get('placeholder', ''),
+            i
+        ))
+    
+    conn.commit()
+    conn.close()
+    print(f"✓ Loaded {len(props)} props from config")
+    return len(props)
+
+# Load props on startup if database is empty
+load_props_from_config()
+
 mail = Mail(app)
 
 
@@ -399,6 +475,19 @@ def admin_regenerate_link(user_id):
         user.save()
         flash(f'New link generated for {user.display_name}!', 'success')
     return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/reload-props', methods=['POST'])
+@login_required
+@admin_required
+def admin_reload_props():
+    """Reload prop questions from props_config.json"""
+    count = load_props_from_config(force_reload=True)
+    if count > 0:
+        flash(f'✓ Reloaded {count} props from config file!', 'success')
+    else:
+        flash('No props found in config file.', 'warning')
+    return redirect(url_for('admin_questions'))
 
 
 @app.route('/admin/lock-time', methods=['POST'])

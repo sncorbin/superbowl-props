@@ -276,6 +276,12 @@
     
     <div class="page-header">
         <h1 class="page-title">Manage Props</h1>
+        <form method="POST" action="{{ url_for('admin_reload_props') }}" style="margin: 0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary" onclick="return confirm('This will DELETE all existing props and reload from props_config.json. Player answers will be lost. Continue?')">
+                🔄 Reload from Config
+            </button>
+        </form>
     </div>
     
     <!-- Add New Question -->
