@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Commissioner Panel - Super Bowl Props{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <h1 style="margin-bottom: 1.5rem;">🏈 Commissioner Panel</h1>
+    
+    <div class="grid-2">
+        <!-- Lock Time Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">⏰ Submission Deadline</h2>
+            </div>
+            
+            <p class="mb-2">
+                Status: 
+                {% if is_locked %}
+                    <span class="badge badge-error">🔒 LOCKED</span>
+                {% elif lock_time %}
+                    <span class="badge badge-warning">⏳ Open until {{ lock_time.strftime('%B %d at %I:%M %p') }}</span>
+                {% else %}
+                    <span class="badge badge-success">✅ No deadline set</span>
+                {% endif %}
+            </p>
+            
+            <form method="POST" action="{{ url_for('admin_set_lock_time') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="lock_time">Lock Date & Time</label>
+                    <input type="datetime-local" id="lock_time" name="lock_time" class="form-control"
+                           value="{{ lock_time.strftime('%Y-%m-%dT%H:%M') if lock_time else '' }}">
+                </div>
+                <button type="submit" class="btn btn-primary">Set Deadline</button>
+            </form>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📊 Game Stats</h2>
+            </div>
+            
+            <div class="grid-3">
+                <div style="text-align: center; padding: 1rem;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--primary);">
+                        {{ participants|length }}
+                    </div>
+                    <div class="text-muted">Players</div>
+                </div>
+                <div style="text-align: center; padding: 1rem;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--primary);">
+                        {{ questions|length }}
+                    </div>
+                    <div class="text-muted">Props</div>
+                </div>
+                <div style="text-align: center; padding: 1rem;">
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--success);">
+                        🏆
+                    </div>
+                    <div class="text-muted">Game On!</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <a href="{{ url_for('admin_answers') }}" class="btn btn-secondary">🔑 Set Answers</a>
+                <a href="{{ url_for('admin_questions') }}" class="btn btn-primary">❓ Manage Props</a>
+                <a href="{{ url_for('admin_game_settings') }}" class="btn btn-warning" style="margin-top: 0.5rem;">⚙️ Game Settings</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add New Player -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">➕ Add New Player</h2>
+        </div>
+        
+        <p class="text-muted mb-2">Add a player to generate their unique invite link. Share it via text, email, or however you like!</p>
+        
+        <form method="POST" action="{{ url_for('admin_add_player') }}" style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                <label for="display_name">Player Name</label>
+                <input type="text" id="display_name" name="display_name" class="form-control" required placeholder="e.g., Mike, Sarah, Dad...">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-success">➕ Add Player</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Player List -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🎮 Players & Invite Links</h2>
+        </div>
+        
+        {% if participants %}
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Invite Link</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in participants %}
+                    <tr>
+                        <td style="font-weight: 500;">{{ user.display_name }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="text" 
+                                       value="{{ app_url }}/play/{{ user.access_token }}" 
+                                       readonly 
+                                       class="form-control" 
+                                       style="font-size: 0.85rem; padding: 0.4rem 0.6rem;"
+                                       onclick="this.select()">
+                                <button type="button" 
+                                        class="btn btn-small btn-primary copy-btn"
+                                        onclick="copyLink(this, '{{ app_url }}/play/{{ user.access_token }}')"
+                                        title="Copy link">
+                                    📋
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.last_visit %}
+                                <span class="badge badge-success">✅ Joined</span>
+                            {% else %}
+                                <span class="badge badge-warning">📩 Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('admin_regenerate_link', user_id=user.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-small btn-warning" title="Generate new link">🔄</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin_delete_player', user_id=user.id) }}" style="display: inline;" 
+                                  onsubmit="return confirm('Remove {{ user.display_name }} from the game?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-small btn-danger" title="Remove player">🗑️</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center" style="padding: 2rem;">
+            No players yet. Add players above to get started! 🏈
+        </p>
+        {% endif %}
+    </div>
+    
+    <!-- Change Password -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🔐 Change Admin Password</h2>
+        </div>
+        
+        <form method="POST" action="{{ url_for('admin_change_password') }}" style="max-width: 400px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" class="form-control" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Password</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function copyLink(btn, link) {
+    navigator.clipboard.writeText(link).then(() => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅';
+        btn.style.background = '#38a169';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = '';
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

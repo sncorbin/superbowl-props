@@ -1,0 +1,22 @@
+# Render.com deployment configuration
+# This file auto-configures your app on Render
+
+services:
+  - type: web
+    name: superbowl-props
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python init_db.py
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MASTER_KEY
+        sync: false  # Set manually in dashboard
+      - key: ACCESS_TOKEN
+        sync: false  # Set manually in dashboard
+    disk:
+      name: props-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1

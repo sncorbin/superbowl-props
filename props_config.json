@@ -1,0 +1,150 @@
+{
+  "event": {
+    "name": "Super Bowl 60",
+    "matchup": "Seahawks vs. Patriots",
+    "type": "Party Prop Sheet"
+  },
+  "props": [
+    {
+      "id": "national_anthem",
+      "label": "National Anthem Length",
+      "options": [
+        { "side": "over", "value": 119.5 },
+        { "side": "under", "value": 119.5 }
+      ]
+    },
+    {
+      "id": "coin_toss",
+      "label": "Coin Toss",
+      "options": ["Heads", "Tails"]
+    },
+    {
+      "id": "game_winner",
+      "label": "Game Winner",
+      "options": ["Seahawks", "Patriots"]
+    },
+    {
+      "id": "game_total",
+      "label": "Game Total Points",
+      "options": [
+        { "side": "over", "value": 45.5 },
+        { "side": "under", "value": 45.5 }
+      ]
+    },
+    {
+      "id": "first_offensive_play",
+      "label": "First Offensive Play",
+      "options": ["Run", "Pass"]
+    },
+    {
+      "id": "first_team_to_score",
+      "label": "Team to Score First",
+      "options": ["Seahawks", "Patriots"]
+    },
+    {
+      "id": "maye_pass_yards",
+      "label": "Drake Maye Passing Yards",
+      "options": [
+        { "side": "over", "value": 221.5 },
+        { "side": "under", "value": 221.5 }
+      ]
+    },
+    {
+      "id": "darnold_pass_yards",
+      "label": "Sam Darnold Passing Yards",
+      "options": [
+        { "side": "over", "value": 228.5 },
+        { "side": "under", "value": 228.5 }
+      ]
+    },
+    {
+      "id": "diggs_receiving_yards",
+      "label": "Stefon Diggs Receiving Yards",
+      "options": [
+        { "side": "over", "value": 43.5 },
+        { "side": "under", "value": 43.5 }
+      ]
+    },
+    {
+      "id": "stevenson_rush_yards",
+      "label": "Rhamondre Stevenson Rushing Yards",
+      "options": [
+        { "side": "over", "value": 50.5 },
+        { "side": "under", "value": 50.5 }
+      ]
+    },
+    {
+      "id": "walker_rush_yards",
+      "label": "Kenneth Walker Rushing Yards",
+      "options": [
+        { "side": "over", "value": 75.5 },
+        { "side": "under", "value": 75.5 }
+      ]
+    },
+    {
+      "id": "jsn_receiving_yards",
+      "label": "Jaxon Smith-Njigba Receiving Yards",
+      "options": [
+        { "side": "over", "value": 94.5 },
+        { "side": "under", "value": 94.5 }
+      ]
+    },
+    {
+      "id": "kupp_receiving_yards",
+      "label": "Cooper Kupp Receiving Yards",
+      "options": [
+        { "side": "over", "value": 31.5 },
+        { "side": "under", "value": 31.5 }
+      ]
+    },
+    {
+      "id": "longest_touchdown",
+      "label": "Longest Touchdown",
+      "options": ["Seahawks", "Patriots"]
+    },
+    {
+      "id": "longest_field_goal",
+      "label": "Longest Field Goal",
+      "options": ["Seahawks", "Patriots"]
+    },
+    {
+      "id": "last_touchdown",
+      "label": "Last Touchdown",
+      "options": ["Seahawks", "Patriots"]
+    },
+    {
+      "id": "total_sacks",
+      "label": "Total Sacks",
+      "options": [
+        { "side": "over", "value": 4.5 },
+        { "side": "under", "value": 4.5 }
+      ]
+    },
+    {
+      "id": "total_turnovers",
+      "label": "Total Turnovers",
+      "options": [
+        { "side": "over", "value": 2.5 },
+        { "side": "under", "value": 2.5 }
+      ]
+    },
+    {
+      "id": "gatorade_color",
+      "label": "Gatorade Bath Color",
+      "options": ["Clear / Water / Orange", "Any Other"]
+    },
+    {
+      "id": "super_bowl_mvp",
+      "label": "Super Bowl MVP",
+      "options": ["Quarterback", "Any Other"]
+    }
+  ],
+  "freeform_fields": [
+    {
+      "id": "total_score",
+      "label": "Total Score (Tiebreaker)",
+      "type": "number",
+      "placeholder": "Enter your prediction"
+    }
+  ]
+}

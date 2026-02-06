@@ -1,0 +1,651 @@
+{% extends "base.html" %}
+
+{% block title %}Scoreboard - Super Bowl Props{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Mobile-first dashboard styles */
+    .lock-banner {
+        background: linear-gradient(135deg, var(--team-a-primary) 0%, var(--team-b-primary) 100%);
+        color: white;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+    
+    /* Mobile-optimized tabs */
+    .tabs {
+        display: flex;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 1rem;
+        gap: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        position: sticky;
+        top: 88px;
+        background: var(--bg);
+        z-index: 50;
+        padding: 0 0.5rem;
+    }
+    
+    .tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .tab {
+        flex: 1;
+        min-width: fit-content;
+        padding: 0.875rem 1rem;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        text-align: center;
+        white-space: nowrap;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .tab:hover {
+        color: var(--text);
+    }
+    
+    .tab.active {
+        color: var(--team-a-primary);
+        border-bottom-color: var(--team-a-primary);
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Mobile leaderboard - card style */
+    .leaderboard {
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+    
+    .leaderboard-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        margin-bottom: 0.5rem;
+        touch-action: manipulation;
+    }
+    
+    .leaderboard-item.you {
+        border-color: var(--team-a-primary);
+        box-shadow: 0 0 0 1px var(--team-a-primary);
+    }
+    
+    .rank {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .rank-1 {
+        background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+        color: #1a1a1a;
+        font-size: 1.25rem;
+    }
+    
+    .rank-2 {
+        background: linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 100%);
+        color: #1a1a1a;
+        font-size: 1.1rem;
+    }
+    
+    .rank-3 {
+        background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+        color: white;
+        font-size: 1.1rem;
+    }
+    
+    .rank-other {
+        background: var(--bg);
+        color: var(--text-muted);
+    }
+    
+    .player-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .player-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .player-stats {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.15rem;
+    }
+    
+    .player-score {
+        text-align: right;
+    }
+    
+    .score-value {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1;
+    }
+    
+    .score-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    /* Your position highlight card */
+    .your-position {
+        background: linear-gradient(135deg, var(--team-a-primary) 0%, var(--team-b-primary) 100%);
+        border-radius: 16px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        color: white;
+        text-align: center;
+    }
+    
+    .your-position-rank {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .your-position-label {
+        font-size: 0.8rem;
+        opacity: 0.9;
+        margin-top: 0.25rem;
+    }
+    
+    .your-position-score {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    
+    /* Mobile table alternative - stacked cards */
+    .picks-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .picks-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        gap: 0.5rem;
+    }
+    
+    .picks-card-question {
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.3;
+        flex: 1;
+    }
+    
+    .picks-card-answer {
+        flex-shrink: 0;
+    }
+    
+    .picks-card-players {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+    
+    .player-pick {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35rem 0.6rem;
+        background: var(--bg);
+        border-radius: 6px;
+        font-size: 0.75rem;
+        gap: 0.35rem;
+    }
+    
+    .player-pick.correct {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+    }
+    
+    .player-pick.incorrect {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+    }
+    
+    .player-pick.you {
+        font-weight: 600;
+        border: 1px solid var(--team-a-primary);
+    }
+    
+    /* Tiebreaker section */
+    .tiebreaker-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .tiebreaker-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+    
+    .tiebreaker-grid {
+        display: grid;
+        gap: 0.5rem;
+    }
+    
+    .tiebreaker-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .tiebreaker-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* Hide desktop table on mobile, show cards */
+    .table-responsive {
+        display: none;
+    }
+    
+    .mobile-picks-view {
+        display: block;
+    }
+    
+    @media (min-width: 768px) {
+        .tabs {
+            position: static;
+        }
+        
+        .table-responsive {
+            display: block;
+        }
+        
+        .mobile-picks-view {
+            display: none;
+        }
+        
+        .leaderboard-item {
+            padding: 1.25rem 1.5rem;
+        }
+        
+        .your-position {
+            display: none;
+        }
+        
+        .desktop-card {
+            display: block !important;
+        }
+    }
+    
+    /* Option button states for dashboard */
+    .option-btn {
+        background: var(--bg);
+        border: 2px solid var(--border);
+        border-radius: 10px;
+        padding: 0.75rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: auto;
+    }
+    
+    .option-btn::before {
+        display: none;
+    }
+    
+    .option-btn.correct {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: #10B981;
+        color: #34d399;
+    }
+    
+    .option-btn.incorrect {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #EF4444;
+        color: #f87171;
+    }
+    
+    /* Category section for dashboard */
+    .category-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .category-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--text-muted);
+        padding: 0.5rem 0;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if lock_time %}
+<div class="lock-banner">
+    {% if is_locked %}
+        <strong>🏈 Game Time!</strong> Watch the results come in!
+    {% else %}
+        <strong>👀 Preview Mode (Admin)</strong> - Scoreboard will be public after the deadline.
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="main-content">
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('leaderboard')">🏆 Leaderboard</div>
+        <div class="tab" onclick="showTab('all-picks')">📊 All Picks</div>
+        <div class="tab" onclick="showTab('by-question')">❓ By Prop</div>
+    </div>
+    
+    <!-- Leaderboard Tab -->
+    <div id="leaderboard" class="tab-content active">
+        <!-- Your Position Card (mobile) -->
+        {% for user in leaderboard %}
+            {% if user.id == current_user.id %}
+            <div class="your-position">
+                <div class="your-position-rank">#{{ loop.index }}</div>
+                <div class="your-position-label">Your Position</div>
+                <div class="your-position-score">{{ scores[user.id].correct }} / {{ scores[user.id].total }} correct</div>
+            </div>
+            {% endif %}
+        {% endfor %}
+        
+        <div class="leaderboard">
+            {% for user in leaderboard %}
+            <div class="leaderboard-item {% if user.id == current_user.id %}you{% endif %}">
+                <div class="rank rank-{% if loop.index <= 3 %}{{ loop.index }}{% else %}other{% endif %}">
+                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </div>
+                <div class="player-info">
+                    <div class="player-name">
+                        {{ user.display_name }}
+                        {% if user.id == current_user.id %}<span class="badge badge-info">You</span>{% endif %}
+                    </div>
+                    <div class="player-stats">
+                        {% if scores[user.id].tiebreaker_diff is not none %}
+                            Tiebreaker: {{ scores[user.id].tiebreaker_diff|int }} off
+                        {% else %}
+                            {{ scores[user.id].answered }} answered
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="player-score">
+                    <div class="score-value">{{ scores[user.id].correct }}</div>
+                    <div class="score-label">of {{ scores[user.id].total }}</div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if freeform_fields %}
+            <div class="tiebreaker-section">
+                <div class="tiebreaker-title">🎯 Tiebreaker Predictions</div>
+                <div class="tiebreaker-grid">
+                    {% for user in leaderboard %}
+                    <div class="tiebreaker-item">
+                        <span>{{ user.display_name }}</span>
+                        <span>
+                            {% for ff in freeform_fields %}
+                            {{ all_freeform_answers.get(user.id, {}).get(ff.field_id, '—') }}
+                            {% if ff.correct_value %}
+                                {% set user_val = all_freeform_answers.get(user.id, {}).get(ff.field_id) %}
+                                {% if user_val %}
+                                    <small style="color: var(--text-muted);">({{ (user_val|float - ff.correct_value|float)|abs|int }} off)</small>
+                                {% endif %}
+                            {% endif %}
+                            {% endfor %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% if freeform_fields[0].correct_value %}
+                    <div class="tiebreaker-item" style="background: rgba(16, 185, 129, 0.15); padding: 0.5rem; border-radius: 6px; margin-top: 0.5rem;">
+                        <span style="color: #34d399; font-weight: 600;">✅ Actual</span>
+                        <span style="color: #34d399; font-weight: 600;">
+                            {% for ff in freeform_fields %}{{ ff.correct_value or '—' }}{% endfor %}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if not leaderboard %}
+            <div style="text-align: center; padding: 2rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🏈</div>
+                <p class="text-muted">No players have joined yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- All Picks Tab -->
+    <div id="all-picks" class="tab-content">
+        <!-- Mobile view - card based -->
+        <div class="mobile-picks-view">
+            {% for category, cat_questions in questions_by_category.items() %}
+            <div class="category-section">
+                <div class="category-title">{{ category }}</div>
+                {% for q in cat_questions %}
+                <div class="picks-card">
+                    <div class="picks-card-header">
+                        <div class="picks-card-question">{{ q.question }}</div>
+                        <div class="picks-card-answer">
+                            {% if q.correct_answer %}
+                                <span class="badge badge-success">✓ {{ q.option_a if q.correct_answer == 'A' else q.option_b }}</span>
+                            {% else %}
+                                <span class="badge badge-warning">Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="picks-card-players">
+                        {% for user in users %}
+                        {% set user_answer = all_answers.get(user.id, {}).get(q.id) %}
+                        {% if user_answer %}
+                        <span class="player-pick {% if q.correct_answer %}{% if user_answer == q.correct_answer %}correct{% else %}incorrect{% endif %}{% endif %} {% if user.id == current_user.id %}you{% endif %}">
+                            {{ user.display_name }}: {{ q.option_a if user_answer == 'A' else q.option_b }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Desktop view - table based (hidden on mobile) -->
+        <div class="desktop-card card" style="display: none;">
+            <div class="card-header">
+                <h2 class="card-title">📊 Everyone's Picks</h2>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="min-width: 200px;">Question</th>
+                            <th>Correct Answer</th>
+                            {% for user in users %}
+                            <th style="text-align: center; min-width: 100px;">
+                                {{ user.display_name }}
+                                {% if user.id == current_user.id %}<br><span class="badge badge-info">You</span>{% endif %}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, cat_questions in questions_by_category.items() %}
+                        <tr>
+                            <td colspan="{{ users|length + 2 }}" style="background: var(--primary); color: white; font-weight: 600;">
+                                {{ category }}
+                            </td>
+                        </tr>
+                        {% for q in cat_questions %}
+                        <tr>
+                            <td>
+                                <strong>{{ q.question }}</strong><br>
+                                <small class="text-muted">A: {{ q.option_a }} | B: {{ q.option_b }}</small>
+                            </td>
+                            <td style="text-align: center;">
+                                {% if q.correct_answer %}
+                                    <span class="badge badge-success">
+                                        {{ q.option_a if q.correct_answer == 'A' else q.option_b }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            {% for user in users %}
+                            {% set user_answer = all_answers.get(user.id, {}).get(q.id) %}
+                            <td class="answer-cell {% if q.correct_answer %}{% if user_answer == q.correct_answer %}correct{% elif user_answer %}incorrect{% endif %}{% elif user_answer %}pending{% endif %}" style="text-align: center;">
+                                {% if user_answer %}
+                                    {{ q.option_a if user_answer == 'A' else q.option_b }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- By Question Tab - mobile friendly -->
+    <div id="by-question" class="tab-content">
+        {% for category, cat_questions in questions_by_category.items() %}
+        <div class="category-section">
+            <div class="category-title">{{ category }}</div>
+            {% for q in cat_questions %}
+            <div class="picks-card">
+                <div class="picks-card-header">
+                    <div class="picks-card-question">{{ q.question }}</div>
+                    {% if q.correct_answer %}
+                        <span class="badge badge-success">✓ {{ q.option_a if q.correct_answer == 'A' else q.option_b }}</span>
+                    {% endif %}
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                    <div style="flex: 1;">
+                        <div class="option-btn {% if q.correct_answer == 'A' %}correct{% elif q.correct_answer == 'B' %}incorrect{% endif %}">
+                            <strong style="font-size: 0.85rem;">{{ q.option_a }}</strong>
+                            <div style="font-size: 0.75rem; margin-top: 0.35rem; color: var(--text-muted);">
+                                {% set count_a = namespace(value=0) %}
+                                {% for user in users %}
+                                    {% if all_answers.get(user.id, {}).get(q.id) == 'A' %}
+                                        {% set count_a.value = count_a.value + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ count_a.value }} pick{{ 's' if count_a.value != 1 else '' }}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="option-btn {% if q.correct_answer == 'B' %}correct{% elif q.correct_answer == 'A' %}incorrect{% endif %}">
+                            <strong style="font-size: 0.85rem;">{{ q.option_b }}</strong>
+                            <div style="font-size: 0.75rem; margin-top: 0.35rem; color: var(--text-muted);">
+                                {% set count_b = namespace(value=0) %}
+                                {% for user in users %}
+                                    {% if all_answers.get(user.id, {}).get(q.id) == 'B' %}
+                                        {% set count_b.value = count_b.value + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ count_b.value }} pick{{ 's' if count_b.value != 1 else '' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="picks-card-players" style="margin-top: 0.75rem;">
+                    {% for user in users %}
+                    {% set user_answer = all_answers.get(user.id, {}).get(q.id) %}
+                    {% if user_answer %}
+                    <span class="player-pick {% if q.correct_answer %}{% if user_answer == q.correct_answer %}correct{% else %}incorrect{% endif %}{% endif %} {% if user.id == current_user.id %}you{% endif %}">
+                        {{ user.display_name }}
+                    </span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showTab(tabId) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Remove active from all tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        document.getElementById(tabId).classList.add('active');
+        
+        // Mark tab as active
+        event.target.classList.add('active');
+    }
+</script>
+{% endblock %}

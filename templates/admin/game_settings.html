@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+
+{% block title %}Game Settings - Super Bowl Props{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .settings-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    
+    .settings-card h3 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 0.95rem;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent-green);
+    }
+    
+    select.form-control {
+        cursor: pointer;
+    }
+    
+    .team-preview {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--bg);
+        border-radius: 8px;
+    }
+    
+    .team-preview img {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+    
+    .team-preview-info h4 {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .team-preview-info p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    
+    .color-swatch {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        margin-right: 0.25rem;
+        vertical-align: middle;
+    }
+    
+    .vs-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem 0;
+    }
+    
+    .vs-badge {
+        background: var(--bg);
+        border: 2px solid var(--border);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--text-muted);
+    }
+    
+    .matchup-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2rem;
+        padding: 2rem;
+        background: linear-gradient(135deg, var(--team-a-primary, #002244) 0%, var(--team-b-primary, #004C54) 100%);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .matchup-team {
+        text-align: center;
+    }
+    
+    .matchup-team img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+        margin-bottom: 0.5rem;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+    
+    .matchup-team h4 {
+        color: white;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.25rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .auto-complete-btn {
+        background: linear-gradient(135deg, var(--accent-green) 0%, #4ade80 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .auto-complete-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(105, 190, 40, 0.3);
+    }
+    
+    .actions-bar {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+    }
+    
+    #save-indicator {
+        display: none;
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: var(--success);
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="card">
+        <div class="card-header">
+            <h1 class="card-title">🏈 Game Settings</h1>
+            <p class="text-muted">Configure the Super Bowl details for this year's pool</p>
+        </div>
+        
+        <div id="save-indicator">✓ Settings Saved!</div>
+        
+        <div class="actions-bar">
+            <button type="button" class="auto-complete-btn" onclick="autoComplete()">
+                ✨ Auto-Complete Current Super Bowl
+            </button>
+        </div>
+        
+        <!-- Live Matchup Preview -->
+        <div class="matchup-preview" id="matchup-preview" 
+             style="--team-a-primary: {{ team_a.primary_color if team_a else '#002244' }}; --team-b-primary: {{ team_b.primary_color if team_b else '#004C54' }};">
+            <div class="matchup-team">
+                <img src="{{ team_a.logo_url if team_a else '' }}" alt="{{ team_a.full_name if team_a else 'Team A' }}" id="preview-team-a-logo">
+                <h4 id="preview-team-a-name">{{ team_a.full_name if team_a else 'Select Team' }}</h4>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="matchup-team">
+                <img src="{{ team_b.logo_url if team_b else '' }}" alt="{{ team_b.full_name if team_b else 'Team B' }}" id="preview-team-b-logo">
+                <h4 id="preview-team-b-name">{{ team_b.full_name if team_b else 'Select Team' }}</h4>
+            </div>
+        </div>
+        
+        <form method="POST" id="settings-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="settings-grid">
+                <!-- Event Info -->
+                <div class="settings-card">
+                    <h3>🏆 Super Bowl Info</h3>
+                    
+                    <div class="form-group">
+                        <label>Super Bowl Number</label>
+                        <select name="super_bowl_number" class="form-control" id="super_bowl_number">
+                            {% for num in ['LVIII', 'LIX', 'LX', 'LXI', 'LXII', 'LXIII', 'LXIV', 'LXV'] %}
+                            <option value="{{ num }}" {% if config.super_bowl_number == num %}selected{% endif %}>
+                                Super Bowl {{ num }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Game Date</label>
+                        <input type="date" name="game_date" class="form-control" 
+                               value="{{ config.game_date }}" id="game_date">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kickoff Time</label>
+                        <input type="time" name="game_time" class="form-control" 
+                               value="{{ config.game_time }}" id="game_time">
+                    </div>
+                </div>
+                
+                <!-- Venue Info -->
+                <div class="settings-card">
+                    <h3>📍 Venue</h3>
+                    
+                    <div class="form-group">
+                        <label>Stadium Name</label>
+                        <input type="text" name="venue_name" class="form-control" 
+                               value="{{ config.venue_name }}" placeholder="e.g., Levi's Stadium">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="venue_city" class="form-control" 
+                               value="{{ config.venue_city }}" placeholder="e.g., Santa Clara">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" name="venue_state" class="form-control" 
+                               value="{{ config.venue_state }}" placeholder="e.g., CA" maxlength="2" style="width: 80px;">
+                    </div>
+                </div>
+                
+                <!-- Team A -->
+                <div class="settings-card">
+                    <h3>🏈 AFC Champion</h3>
+                    
+                    <div class="form-group">
+                        <label>Select Team</label>
+                        <select name="team_a_code" class="form-control" id="team_a_select" onchange="updateTeamPreview('a')">
+                            <option value="">-- Select Team --</option>
+                            {% for team in afc_teams %}
+                            <option value="{{ team.code }}" 
+                                    data-logo="{{ team.logo_url }}"
+                                    data-name="{{ team.full_name }}"
+                                    data-primary="{{ team.primary_color }}"
+                                    data-secondary="{{ team.secondary_color }}"
+                                    {% if config.team_a_code == team.code %}selected{% endif %}>
+                                {{ team.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="team-preview" id="team-a-preview" style="{% if not team_a %}display:none{% endif %}">
+                        <img src="{{ team_a.logo_url if team_a else '' }}" alt="" id="team-a-logo">
+                        <div class="team-preview-info">
+                            <h4 id="team-a-name">{{ team_a.full_name if team_a else '' }}</h4>
+                            <p>
+                                <span class="color-swatch" id="team-a-primary" style="background: {{ team_a.primary_color if team_a else '#ccc' }}"></span>
+                                <span class="color-swatch" id="team-a-secondary" style="background: {{ team_a.secondary_color if team_a else '#ccc' }}"></span>
+                                Team Colors
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Team B -->
+                <div class="settings-card">
+                    <h3>🏈 NFC Champion</h3>
+                    
+                    <div class="form-group">
+                        <label>Select Team</label>
+                        <select name="team_b_code" class="form-control" id="team_b_select" onchange="updateTeamPreview('b')">
+                            <option value="">-- Select Team --</option>
+                            {% for team in nfc_teams %}
+                            <option value="{{ team.code }}"
+                                    data-logo="{{ team.logo_url }}"
+                                    data-name="{{ team.full_name }}"
+                                    data-primary="{{ team.primary_color }}"
+                                    data-secondary="{{ team.secondary_color }}"
+                                    {% if config.team_b_code == team.code %}selected{% endif %}>
+                                {{ team.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="team-preview" id="team-b-preview" style="{% if not team_b %}display:none{% endif %}">
+                        <img src="{{ team_b.logo_url if team_b else '' }}" alt="" id="team-b-logo">
+                        <div class="team-preview-info">
+                            <h4 id="team-b-name">{{ team_b.full_name if team_b else '' }}</h4>
+                            <p>
+                                <span class="color-swatch" id="team-b-primary" style="background: {{ team_b.primary_color if team_b else '#ccc' }}"></span>
+                                <span class="color-swatch" id="team-b-secondary" style="background: {{ team_b.secondary_color if team_b else '#ccc' }}"></span>
+                                Team Colors
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pool Branding -->
+                <div class="settings-card" style="grid-column: 1 / -1;">
+                    <h3>🎯 Pool Branding</h3>
+                    
+                    <div class="form-group">
+                        <label>Pool Name</label>
+                        <input type="text" name="pool_name" class="form-control" 
+                               value="{{ config.pool_name }}" placeholder="e.g., Pioneer Hill Super Bowl Pool">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Tagline</label>
+                        <input type="text" name="pool_tagline" class="form-control" 
+                               value="{{ config.pool_tagline }}" placeholder="e.g., Pullman's Premier Prop Bet Experience">
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: center; padding: 1rem 0;">
+                <button type="submit" class="btn btn-primary">
+                    💾 Save Settings
+                </button>
+                <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">
+                    ← Back to Admin
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Team data for JavaScript
+const teamsData = {
+    {% for code, team in all_teams.items() %}
+    '{{ code }}': {
+        code: '{{ team.code }}',
+        name: '{{ team.full_name }}',
+        logo: '{{ team.logo_url }}',
+        primary: '{{ team.primary_color }}',
+        secondary: '{{ team.secondary_color }}'
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Super Bowl venue data
+const venueData = {
+    'LVIII': { date: '2024-02-11', venue: 'Allegiant Stadium', city: 'Las Vegas', state: 'NV' },
+    'LIX': { date: '2025-02-09', venue: 'Caesars Superdome', city: 'New Orleans', state: 'LA' },
+    'LX': { date: '2026-02-08', venue: "Levi's Stadium", city: 'Santa Clara', state: 'CA' },
+    'LXI': { date: '2027-02-14', venue: 'SoFi Stadium', city: 'Inglewood', state: 'CA' },
+    'LXII': { date: '2028-02-13', venue: 'Mercedes-Benz Stadium', city: 'Atlanta', state: 'GA' }
+};
+
+function updateTeamPreview(side) {
+    const select = document.getElementById(`team_${side}_select`);
+    const option = select.options[select.selectedIndex];
+    const preview = document.getElementById(`team-${side}-preview`);
+    
+    if (!option.value) {
+        preview.style.display = 'none';
+        return;
+    }
+    
+    const team = teamsData[option.value];
+    if (!team) return;
+    
+    document.getElementById(`team-${side}-logo`).src = team.logo;
+    document.getElementById(`team-${side}-name`).textContent = team.name;
+    document.getElementById(`team-${side}-primary`).style.background = team.primary;
+    document.getElementById(`team-${side}-secondary`).style.background = team.secondary;
+    preview.style.display = 'flex';
+    
+    // Update matchup preview
+    document.getElementById(`preview-team-${side}-logo`).src = team.logo;
+    document.getElementById(`preview-team-${side}-name`).textContent = team.name;
+    
+    // Update gradient colors
+    updateMatchupGradient();
+}
+
+function updateMatchupGradient() {
+    const teamA = teamsData[document.getElementById('team_a_select').value];
+    const teamB = teamsData[document.getElementById('team_b_select').value];
+    
+    const preview = document.getElementById('matchup-preview');
+    const colorA = teamA ? teamA.primary : '#002244';
+    const colorB = teamB ? teamB.primary : '#004C54';
+    
+    preview.style.background = `linear-gradient(135deg, ${colorA} 0%, ${colorB} 100%)`;
+}
+
+function autoComplete() {
+    // Get the current year's Super Bowl info
+    const sbNumber = document.getElementById('super_bowl_number').value;
+    const venue = venueData[sbNumber];
+    
+    if (venue) {
+        document.querySelector('input[name="game_date"]').value = venue.date;
+        document.querySelector('input[name="venue_name"]').value = venue.venue;
+        document.querySelector('input[name="venue_city"]').value = venue.city;
+        document.querySelector('input[name="venue_state"]').value = venue.state;
+    }
+    
+    // Show confirmation
+    alert(`Auto-filled venue information for Super Bowl ${sbNumber}.\n\nPlease select the teams manually once the Conference Championships are decided.`);
+}
+
+// Show save indicator
+function showSaveIndicator() {
+    const indicator = document.getElementById('save-indicator');
+    indicator.style.display = 'block';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, 2000);
+}
+
+// Initialize previews
+document.addEventListener('DOMContentLoaded', function() {
+    updateTeamPreview('a');
+    updateTeamPreview('b');
+});
+</script>
+{% endblock %}

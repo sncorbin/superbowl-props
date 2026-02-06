@@ -1,0 +1,12 @@
+# Railway.app deployment configuration
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "gunicorn app:app"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+
+[[services]]
+name = "web"

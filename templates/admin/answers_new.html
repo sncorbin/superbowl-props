@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Master Key - Super Bowl Props{% endblock %}
+
+{% block extra_css %}
+<style>
+    .clear-btn {
+        background: var(--bg);
+        transition: all 0.2s;
+    }
+    .clear-btn.has-answer {
+        background: #fed7d7;
+        color: #c53030;
+        border-color: #feb2b2;
+    }
+    .clear-btn.has-answer:hover {
+        background: #fc8181;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1 class="card-title">Master Key</h1>
+                <p class="text-muted">Select answers as results come in — changes save automatically</p>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="clearAllAnswers()" style="white-space: nowrap;">
+                Clear All
+            </button>
+        </div>
+        
+        <div id="save-indicator" style="display: none; position: fixed; top: 80px; right: 20px; background: var(--success); color: white; padding: 0.5rem 1rem; border-radius: 5px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+            ✓ Saved!
+        </div>
+        
+        <form method="POST" action="{{ url_for('admin_answers') }}" id="answers-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            {% for category, cat_questions in questions_by_category.items() %}
+            <div class="category-section">
+                <div class="category-title">{{ category }}</div>
+                {% for question in cat_questions %}
+                <div class="question-card">
+                    <div class="question-text">{{ loop.index }}. {{ question.question }}</div>
+                    <div class="options">
+                        <label class="option-label">
+                            <input type="radio" name="answer_{{ question.id }}" value="A" 
+                                   {% if question.correct_answer == 'A' %}checked{% endif %}
+                                   onclick="saveAnswer({{ question.id }}, 'A')">
+                            <span class="option-btn {% if question.correct_answer == 'A' %}correct{% endif %}">
+                                {{ question.option_a }}
+                            </span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="answer_{{ question.id }}" value="B"
+                                   {% if question.correct_answer == 'B' %}checked{% endif %}
+                                   onclick="saveAnswer({{ question.id }}, 'B')">
+                            <span class="option-btn {% if question.correct_answer == 'B' %}correct{% endif %}">
+                                {{ question.option_b }}
+                            </span>
+                        </label>
+                        <button type="button" class="btn btn-small clear-btn {% if question.correct_answer %}has-answer{% endif %}" 
+                                onclick="clearAnswer({{ question.id }})"
+                                style="padding: 0.875rem 1rem;">
+                            {% if question.correct_answer %}Clear{% else %}Pending{% endif %}
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            
+            {% if freeform_fields %}
+            <div class="category-section">
+                <div class="category-title">🎯 Tiebreaker Values</div>
+                {% for field in freeform_fields %}
+                <div class="question-card">
+                    <div class="question-text">{{ field.label }}</div>
+                    <div style="max-width: 300px;">
+                        <input type="{{ field.field_type }}" 
+                               name="ff_{{ field.field_id }}" 
+                               class="form-control"
+                               value="{{ field.correct_value or '' }}"
+                               placeholder="Enter actual result"
+                               onchange="saveFreeform('{{ field.field_id }}', this.value)"
+                               onblur="saveFreeform('{{ field.field_id }}', this.value)">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if not questions_by_category %}
+            <div style="text-align: center; padding: 3rem;">
+                <p class="text-muted">No prop questions have been added yet.</p>
+                <a href="{{ url_for('admin_questions') }}" class="btn btn-primary">Add Questions</a>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 1.5rem;">
+                <a href="{{ url_for('admin_panel') }}" class="btn btn-primary">
+                    ← Back to Admin Panel
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+console.log('Master Key JS loaded');
+
+const indicator = document.getElementById('save-indicator');
+
+function showSaveIndicator() {
+    console.log('Showing save indicator');
+    indicator.style.display = 'block';
+    setTimeout(() => {
+        indicator.style.display = 'none';
+    }, 1500);
+}
+
+function updateAnswerStyles() {
+    document.querySelectorAll('.question-card').forEach(card => {
+        const buttons = card.querySelectorAll('.option-btn:not(.clear-btn)');
+        buttons.forEach(btn => {
+            btn.classList.remove('correct');
+        });
+        
+        const checked = card.querySelector('input[type="radio"]:checked');
+        const clearBtn = card.querySelector('.clear-btn');
+        
+        if (checked && checked.value) {
+            const btn = checked.parentElement.querySelector('.option-btn');
+            if (btn) {
+                btn.classList.add('correct');
+            }
+            if (clearBtn) {
+                clearBtn.textContent = 'Clear';
+                clearBtn.classList.add('has-answer');
+            }
+        } else {
+            if (clearBtn) {
+                clearBtn.textContent = 'Pending';
+                clearBtn.classList.remove('has-answer');
+            }
+        }
+    });
+}
+
+function saveAnswer(questionId, value) {
+    console.log('saveAnswer called:', questionId, value);
+    
+    updateAnswerStyles();
+    
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    formData.append('answer_' + questionId, value);
+    
+    console.log('Sending POST to save answer...');
+    
+    fetch('{{ url_for("admin_answers") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('Response received:', response.status);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Save response:', data);
+        if (data.success) showSaveIndicator();
+    })
+    .catch(err => {
+        console.error('Save failed:', err);
+        alert('Save failed: ' + err.message);
+    });
+}
+
+function clearAnswer(questionId) {
+    console.log('clearAnswer called:', questionId);
+    
+    document.querySelectorAll('input[name="answer_' + questionId + '"]').forEach(radio => {
+        radio.checked = false;
+    });
+    
+    updateAnswerStyles();
+    
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    formData.append('clear_answer', questionId);
+    
+    console.log('Sending POST to clear answer...');
+    
+    fetch('{{ url_for("admin_answers") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('Response received:', response.status);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Clear response:', data);
+        if (data.success) showSaveIndicator();
+    })
+    .catch(err => {
+        console.error('Clear failed:', err);
+        alert('Clear failed: ' + err.message);
+    });
+}
+
+function clearAllAnswers() {
+    if (!confirm('Clear all answers? This will reset all props to Pending.')) {
+        return;
+    }
+    
+    console.log('clearAllAnswers called');
+    
+    document.querySelectorAll('.question-card input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+    });
+    
+    document.querySelectorAll('input[name^="ff_"]').forEach(input => {
+        input.value = '';
+    });
+    
+    updateAnswerStyles();
+    
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    formData.append('clear_all', 'true');
+    
+    fetch('{{ url_for("admin_answers") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Clear all response:', data);
+        if (data.success) showSaveIndicator();
+    })
+    .catch(err => {
+        console.error('Clear all failed:', err);
+        alert('Clear all failed: ' + err.message);
+    });
+}
+
+function saveFreeform(fieldId, value) {
+    console.log('saveFreeform called:', fieldId, value);
+    
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    formData.append('ff_' + fieldId, value);
+    
+    fetch('{{ url_for("admin_answers") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Freeform save response:', data);
+        if (data.success) showSaveIndicator();
+    })
+    .catch(err => {
+        console.error('Freeform save failed:', err);
+        alert('Save failed: ' + err.message);
+    });
+}
+</script>
+{% endblock %}
