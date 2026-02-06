@@ -29,6 +29,9 @@ login_manager.login_view = 'home'
 login_manager.login_message = '🏈 Please use your personal invite link to access the game.'
 login_manager.login_message_category = 'info'
 
+# Initialize database tables on startup
+init_db()
+
 mail = Mail(app)
 
 
