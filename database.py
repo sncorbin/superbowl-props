@@ -5,8 +5,24 @@ Uses SQLite for minimal dependencies
 import sqlite3
 import os
 from datetime import datetime
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
+
+# Common US timezones for selection
+TIMEZONE_CHOICES = [
+    ('US/Pacific', 'Pacific Time (PT)'),
+    ('US/Mountain', 'Mountain Time (MT)'),
+    ('US/Central', 'Central Time (CT)'),
+    ('US/Eastern', 'Eastern Time (ET)'),
+    ('US/Alaska', 'Alaska Time (AKT)'),
+    ('US/Hawaii', 'Hawaii Time (HT)'),
+]
+
+DEFAULT_TIMEZONE = 'US/Pacific'
 
 
 def get_db_connection():
@@ -419,16 +435,43 @@ class Settings:
         conn.close()
     
     @staticmethod
+    def get_timezone():
+        """Get the configured timezone (defaults to US/Pacific)"""
+        return Settings.get('timezone', DEFAULT_TIMEZONE)
+    
+    @staticmethod
+    def set_timezone(tz_name):
+        """Set the timezone"""
+        Settings.set('timezone', tz_name)
+    
+    @staticmethod
+    def get_tz():
+        """Get the ZoneInfo object for the configured timezone"""
+        return ZoneInfo(Settings.get_timezone())
+    
+    @staticmethod
+    def now():
+        """Get current datetime in the configured timezone"""
+        return datetime.now(Settings.get_tz())
+    
+    @staticmethod
     def get_lock_time():
-        """Get the lock time as a datetime object"""
+        """Get the lock time as a timezone-aware datetime object"""
         lock_time_str = Settings.get('lock_time')
         if lock_time_str:
-            return datetime.fromisoformat(lock_time_str)
+            dt = datetime.fromisoformat(lock_time_str)
+            # If stored without timezone, assume it's in configured timezone
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=Settings.get_tz())
+            return dt
         return None
     
     @staticmethod
     def set_lock_time(dt):
         """Set the lock time from a datetime object"""
+        # Ensure timezone info is included
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=Settings.get_tz())
         Settings.set('lock_time', dt.isoformat())
     
     @staticmethod
@@ -437,7 +480,7 @@ class Settings:
         lock_time = Settings.get_lock_time()
         if lock_time is None:
             return False
-        return datetime.now() >= lock_time
+        return Settings.now() >= lock_time
 
 
 class GameConfig:

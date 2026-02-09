@@ -14,7 +14,7 @@ from flask_wtf.csrf import CSRFProtect
 from config import Config
 from database import (
     init_db, User, PropQuestion, UserAnswer, Settings, get_db_connection,
-    FreeformField, UserFreeformAnswer, GameConfig
+    FreeformField, UserFreeformAnswer, GameConfig, TIMEZONE_CHOICES, DEFAULT_TIMEZONE
 )
 from nfl_teams import NFL_TEAMS, get_team, get_teams_by_conference, get_all_teams
 
@@ -413,6 +413,10 @@ def admin_panel():
     # Count answered questions
     answered_questions = len([q for q in questions if q.correct_answer])
     
+    # Timezone info
+    current_timezone = Settings.get_timezone()
+    current_time = Settings.now()
+    
     return render_template('admin/panel.html',
                           users=users,
                           participants=participants,
@@ -420,7 +424,10 @@ def admin_panel():
                           answered_questions=answered_questions,
                           lock_time=lock_time,
                           is_locked=is_locked,
-                          app_url=Config.APP_URL)
+                          app_url=Config.APP_URL,
+                          timezone_choices=TIMEZONE_CHOICES,
+                          current_timezone=current_timezone,
+                          current_time=current_time)
 
 
 @app.route('/admin/add-player', methods=['POST'])
@@ -504,10 +511,29 @@ def admin_set_lock_time():
     try:
         lock_time = datetime.fromisoformat(lock_time_str)
         Settings.set_lock_time(lock_time)
-        flash(f'Deadline set: {lock_time.strftime("%B %d at %I:%M %p")}', 'success')
+        tz_name = Settings.get_timezone()
+        flash(f'Deadline set: {lock_time.strftime("%B %d at %I:%M %p")} ({tz_name})', 'success')
     except ValueError:
         flash('Invalid date/time format.', 'error')
     
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/timezone', methods=['POST'])
+@login_required
+@admin_required
+def admin_set_timezone():
+    """Set the timezone for all datetime operations"""
+    tz = request.form.get('timezone', DEFAULT_TIMEZONE)
+    
+    # Validate timezone
+    valid_tzs = [t[0] for t in TIMEZONE_CHOICES]
+    if tz not in valid_tzs:
+        flash('Invalid timezone selected.', 'error')
+        return redirect(url_for('admin_panel'))
+    
+    Settings.set_timezone(tz)
+    flash(f'Timezone set to {tz}', 'success')
     return redirect(url_for('admin_panel'))
 
 

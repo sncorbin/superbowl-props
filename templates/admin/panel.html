@@ -13,6 +13,13 @@
                 <h2 class="card-title">⏰ Submission Deadline</h2>
             </div>
             
+            <!-- Current Time Display -->
+            <div style="background: var(--bg-secondary); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;">
+                <strong>Current Time:</strong> 
+                <span id="current-time">{{ current_time.strftime('%B %d, %Y at %I:%M:%S %p') }}</span>
+                <span style="color: var(--text-muted);">({{ current_timezone }})</span>
+            </div>
+            
             <p class="mb-2">
                 Status: 
                 {% if is_locked %}
@@ -23,6 +30,19 @@
                     <span class="badge badge-success">✅ No deadline set</span>
                 {% endif %}
             </p>
+            
+            <!-- Timezone Selection -->
+            <form method="POST" action="{{ url_for('admin_set_timezone') }}" style="margin-bottom: 1rem;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="timezone">Timezone</label>
+                    <select id="timezone" name="timezone" class="form-control" onchange="this.form.submit()">
+                        {% for tz_value, tz_label in timezone_choices %}
+                        <option value="{{ tz_value }}" {% if tz_value == current_timezone %}selected{% endif %}>{{ tz_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
             
             <form method="POST" action="{{ url_for('admin_set_lock_time') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -194,5 +214,24 @@ function copyLink(btn, link) {
         }, 2000);
     });
 }
+
+// Live clock in configured timezone
+(function updateClock() {
+    const clockEl = document.getElementById('current-time');
+    if (clockEl) {
+        const options = {
+            timeZone: '{{ current_timezone }}',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        };
+        clockEl.textContent = new Date().toLocaleString('en-US', options);
+    }
+    setTimeout(updateClock, 1000);
+})();
 </script>
 {% endblock %}
